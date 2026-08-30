@@ -1,0 +1,15 @@
+model,eixo,variante,n_queries,media_variante,media_baseline,delta_pp,p,significativo_holm,relevante,acionavel
+deepseek-v4-flash,exposicao,10,64,0.8594,0.775,8.44,0.0147,False,True,False
+deepseek-v4-flash,exposicao,30,64,0.7812,0.775,0.62,1.0,False,False,False
+deepseek-v4-flash,recuperacao,embedding,64,0.8688,0.775,9.38,0.0124,False,True,False
+deepseek-v4-flash,recuperacao,hybrid,64,0.8812,0.775,10.63,0.0131,False,True,False
+deepseek-v4-flash,recuperacao,two_stage,64,0.7781,0.775,0.31,1.0,False,False,False
+deepseek-v4-flash,invocacao,json_prompt,64,0.95,0.775,17.5,0.0001,True,True,True
+deepseek-v4-flash,invocacao,code_action,64,0.9844,0.775,20.94,0.0003,True,True,True
+gemma-4-e4b,exposicao,10,64,0.7031,0.7156,-1.25,1.0,False,False,False
+gemma-4-e4b,exposicao,30,64,0.7031,0.7156,-1.25,1.0,False,False,False
+gemma-4-e4b,recuperacao,embedding,64,0.7656,0.7156,5.0,0.1258,False,True,False
+gemma-4-e4b,recuperacao,hybrid,64,0.7812,0.7156,6.56,0.0641,False,True,False
+gemma-4-e4b,recuperacao,two_stage,64,0.5781,0.7156,-13.75,0.0041,True,True,True
+gemma-4-e4b,invocacao,json_prompt,64,0.7219,0.7156,0.62,0.7448,False,False,False
+gemma-4-e4b,invocacao,code_action,64,0.8219,0.7156,10.62,0.0023,True,True,True

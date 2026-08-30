@@ -8,3 +8,4 @@ __pycache__/
 results/embedding_cache_*.json
 results/smoke.csv
 results/pilot.csv
+results/run_full.log

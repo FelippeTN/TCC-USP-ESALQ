@@ -1,0 +1,17 @@
+model,toolset_size,retrieval,invocation,n,acuracia,alucinacao,ferramenta_inventada,atraiu_lure,erro_parsing,recall_retrieval,tokens_prompt_medio,latencia_media_s
+deepseek-v4-flash,10,full,native,320,0.8594,0.0,0.0,0.0,0.0,1.0,898.1875,0.9296
+deepseek-v4-flash,30,full,native,320,0.7812,0.0,0.0,0.0,0.0,1.0,2115.1562,0.958
+deepseek-v4-flash,50,embedding,native,320,0.8688,0.0,0.0,0.0,0.0,1.0,598.5938,0.9051
+deepseek-v4-flash,50,full,code_action,320,0.9844,0.0,0.0,0.0,0.0,1.0,1296.3281,0.2105
+deepseek-v4-flash,50,full,json_prompt,320,0.95,0.0,0.0,0.0,0.0,1.0,1316.3281,0.4765
+deepseek-v4-flash,50,full,native,320,0.775,0.0,0.0,0.0,0.0,1.0,3333.2812,1.0003
+deepseek-v4-flash,50,hybrid,native,320,0.8812,0.0,0.0,0.0,0.0,0.9688,592.75,0.8507
+deepseek-v4-flash,50,two_stage,native,320,0.7781,0.0156,0.0,0.0156,0.0,0.9469,1113.8531,1.0298
+gemma-4-e4b,10,full,native,320,0.7031,0.0,0.0,0.0,0.0,1.0,636.9219,0.9224
+gemma-4-e4b,30,full,native,320,0.7031,0.0,0.0,0.0,0.0,1.0,1768.0312,0.7759
+gemma-4-e4b,50,embedding,native,320,0.7656,0.0,0.0,0.0,0.0,1.0,358.2344,0.5009
+gemma-4-e4b,50,full,code_action,320,0.8219,0.0,0.0,0.0,0.1875,1.0,1331.1719,1.0223
+gemma-4-e4b,50,full,json_prompt,320,0.7219,0.0,0.0,0.0,0.1781,1.0,1351.1719,0.5681
+gemma-4-e4b,50,full,native,320,0.7156,0.0,0.0,0.0,0.0,1.0,2898.2031,0.7756
+gemma-4-e4b,50,hybrid,native,320,0.7812,0.0,0.0,0.0,0.0,0.9688,352.5781,0.5001
+gemma-4-e4b,50,two_stage,native,320,0.5781,0.0,0.0,0.0,0.0,0.8125,1576.6719,0.8627
