@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+
+# endereco do servidor de inferencia — repo publico
+.env
+
+# caches e execuções descartáveis — o dado primário (raw_results.csv) É versionado
+results/embedding_cache_*.json
+results/smoke.csv
+results/pilot.csv
