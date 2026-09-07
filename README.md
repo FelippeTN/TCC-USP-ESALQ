@@ -104,6 +104,21 @@ py analyze.py                                     # métricas + testes OFAT
 Cada módulo tem autoteste embutido: `py corpus.py`, `py queries.py`, `py client.py`,
 `py invocation.py`, `py retrieval.py`.
 
+## Organização do projeto
+
+Os módulos Python ficam na raiz, separados por responsabilidade:
+
+- `config.py`: configuração e leitura do `.env`.
+- `corpus.py` e `queries.py`: ferramentas e consultas do experimento.
+- `client.py`, `invocation.py` e `retrieval.py`: clientes, invocação e recuperação de ferramentas.
+- `run_experiment.py` e `analyze.py`: execução e análise dos resultados.
+- `results/`: dados e saídas do experimento.
+- `docker/Dockerfile`: definição da imagem de execução.
+- `compose.yaml`: configuração do Docker Compose, mantida na raiz para os comandos abaixo.
+
+Essa estrutura preserva os imports e os caminhos de `.env` e `results/`,
+que são relativos aos arquivos Python.
+
 ### Docker (Python 3.14)
 
 ```bash
