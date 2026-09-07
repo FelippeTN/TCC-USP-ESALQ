@@ -9,3 +9,8 @@ results/embedding_cache_*.json
 results/smoke.csv
 results/pilot.csv
 results/run_full.log
+
+# derivados de execuções alternativas (--input != raw_results.csv)
+results/*_smoke.csv
+results/*_pilot.csv
+ 

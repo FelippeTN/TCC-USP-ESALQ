@@ -56,7 +56,11 @@ EMBEDDING_MODEL = {
 TOOLSET_SIZES = [10, 30, 50]
 
 # Eixo 2 — recuperação de ferramentas
-RETRIEVAL_MODES = ["full", "embedding", "hybrid", "two_stage"]
+# `random` é PISO de comparação, não uma técnica candidata: expõe k ferramentas
+# sorteadas. Sem ele não se distingue "a recuperação achou o que importa" de
+# "reduzir o toolset já ajuda por si só" — embedding/hybrid precisam superá-lo
+# para que o ganho seja atribuído à relevância, e não ao tamanho do prompt.
+RETRIEVAL_MODES = ["full", "random", "embedding", "hybrid", "two_stage"]
 RETRIEVAL_K = 5
 
 # Eixo 3 — modo de invocação

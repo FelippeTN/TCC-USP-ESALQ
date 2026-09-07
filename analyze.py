@@ -140,23 +140,28 @@ def main():
 
     df = load(args.input)
     outdir = args.input.parent
+    # Os CSVs derivados levam o nome do arquivo de entrada quando ela não é o dado
+    # primário. Sem isso, `analyze.py --input results/smoke.csv` grava por cima de
+    # summary_by_condition.csv e ofat_tests_*.csv — os resultados de um teste com
+    # backend mock passam a ocupar o lugar dos resultados reais, em silêncio.
+    stem = "" if args.input.resolve() == RAW_CSV.resolve() else f"_{args.input.stem}"
     pd.set_option("display.width", 200, "display.max_columns", 50)
 
     summary = condition_summary(df)
     print(f"\n{'='*100}\nRESUMO POR CONDIÇÃO\n{'='*100}")
     print(summary.to_string(index=False))
-    summary.to_csv(outdir / "summary_by_condition.csv", index=False)
+    summary.to_csv(outdir / f"summary_by_condition{stem}.csv", index=False)
 
     print(f"\n{'='*100}\nACURÁCIA POR TIPO DE QUERY\n{'='*100}")
     print(by_query_type(df).to_string(index=False))
-    by_query_type(df).to_csv(outdir / "accuracy_by_query_type.csv", index=False)
+    by_query_type(df).to_csv(outdir / f"accuracy_by_query_type{stem}.csv", index=False)
 
     tests = ofat_tests(df, args.metric)
     print(f"\n{'='*100}\nTESTES OFAT vs BASELINE ({BASELINE}) — métrica: {args.metric}"
           f"\nHolm-Bonferroni a {ALPHA:.0%}; efeito mínimo relevante: {MIN_RELEVANT_EFFECT:.0%}\n{'='*100}")
     print(tests.to_string(index=False) if not tests.empty else "(sem comparações — dados insuficientes)")
     if not tests.empty:
-        tests.to_csv(outdir / f"ofat_tests_{args.metric}.csv", index=False)
+        tests.to_csv(outdir / f"ofat_tests_{args.metric}{stem}.csv", index=False)
 
     print(f"\nArquivos gravados em {outdir}")
 

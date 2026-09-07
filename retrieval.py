@@ -1,14 +1,25 @@
 """Eixo 2 — recuperação: quais ferramentas do toolset chegam ao modelo.
 
 full      → todas (baseline; custo de prompt cresce com o toolset)
+random    → k sorteadas (PISO; ver abaixo)
 embedding → top-k por similaridade de cosseno query↔descrição (qwen3-embedding-8B)
 hybrid    → fusão RRF entre embedding e busca léxica (sobrepesa nomes/termos exatos)
 two_stage → 1ª chamada ao LLM escolhe o domínio, 2ª recebe só as ferramentas dele
+
+`random` não é candidata a uso prático: é instrumento de medida. Reduzir o toolset
+de 50 para 5 ajuda o modelo por dois motivos distintos — menos ruído no prompt, e
+as ferramentas certas em evidência. `random` isola o primeiro: qualquer ganho de
+embedding/hybrid ACIMA do random é o que se atribui à relevância da recuperação.
+Sem esse piso, um ganho de embedding sobre `full` é ambíguo entre os dois efeitos.
+
+O sorteio é semeado por query (não por execução): o mesmo toolset sai em qualquer
+repetição, modelo ou máquina, então a comparação permanece pareada e reprodutível.
 
 two_stage é a única que gasta uma chamada extra por query — é a linha a cortar
 primeiro se o orçamento apertar.
 """
 import json
+import random
 import re
 import unicodedata
 from pathlib import Path
@@ -17,10 +28,24 @@ import numpy as np
 
 from config import CORE_DOMAINS, RETRIEVAL_K
 
-RETRIEVAL_MODES = ("full", "embedding", "hybrid", "two_stage")
+RETRIEVAL_MODES = ("full", "random", "embedding", "hybrid", "two_stage")
 
 CACHE_DIR = Path(__file__).parent / "results"
 _RRF_K = 60  # constante padrão do Reciprocal Rank Fusion (Cormack et al., 2009)
+
+
+def _random_ranking(query: str, tools: list[dict]) -> list[int]:
+    """Ordem sorteada, determinística por (query, conjunto de ferramentas).
+
+    A semente vem do texto da query e dos nomes das ferramentas — não do relógio
+    nem de estado global. Consequências: o mesmo piso é usado nas 5 repetições e
+    nos dois modelos (comparação pareada), e reexecutar o experimento reproduz o
+    resultado. Usar random.shuffle sem semente quebraria as duas coisas.
+    """
+    names = "|".join(t["name"] for t in tools)
+    order = list(range(len(tools)))
+    random.Random(f"{query}|{names}").shuffle(order)
+    return order
 
 
 def _norm(text: str) -> str:
@@ -121,6 +146,9 @@ def select_tools(mode: str, query: str, tools: list[dict], *, index=None, client
     if mode == "full":
         return tools, {}
 
+    if mode == "random":
+        return [tools[i] for i in _random_ranking(query, tools)[:k]], {}
+
     if mode in ("embedding", "hybrid"):
         emb = _embedding_ranking(index, query, tools)
         order = emb if mode == "embedding" else _rrf(emb, _lexical_ranking(query, tools))
@@ -146,6 +174,39 @@ if __name__ == "__main__":
     # o braço léxico tem que achar a ferramenta pelo nome exato
     lex = _lexical_ranking("preciso usar export conversation", tools)
     assert tools[lex[0]]["name"] == "export_conversation", tools[lex[0]]["name"]
+
+    # --- piso random: tamanho, determinismo e independência de estado global ---
+    sel_a, info_a = select_tools("random", "manda mensagem", tools, k=5)
+    assert len(sel_a) == 5 and info_a == {}
+    assert {t["name"] for t in sel_a} <= {t["name"] for t in tools}
+
+    # determinístico: mesma query + mesmo toolset → mesma seleção, sempre
+    assert select_tools("random", "manda mensagem", tools, k=5)[0] == sel_a
+
+    # e não depende do estado do módulo random (senão a ordem de execução do
+    # experimento mudaria o piso e a comparação pareada iria por água abaixo)
+    random.seed(1); first = select_tools("random", "manda mensagem", tools, k=5)[0]
+    random.seed(999); assert select_tools("random", "manda mensagem", tools, k=5)[0] == first
+
+    # queries diferentes recebem toolsets diferentes: não é um piso degenerado
+    sel_b = select_tools("random", "quem e o usuario u_1", tools, k=5)[0]
+    assert {t["name"] for t in sel_a} != {t["name"] for t in sel_b}
+
+    # o piso tem que ser mesmo cego: sobre 64 queries, o gabarito raramente
+    # sobrevive. Se recall ficasse alto, `random` não seria piso de nada.
+    from queries import QUERIES
+    from corpus import build_toolset_for_query
+
+    hits = 0
+    for q in QUERIES:
+        if not q["expected"]:
+            continue
+        ts = build_toolset_for_query(50, q)
+        chosen = {t["name"] for t in select_tools("random", q["text"], ts, k=5)[0]}
+        hits += bool(set(q["expected"]) & chosen)
+    recall = hits / sum(1 for q in QUERIES if q["expected"])
+    assert recall < 0.5, f"recall do piso random alto demais ({recall:.2f}) — não serve de piso"
+    print(f"  random: recall@5 do piso = {recall:.2f} (esperado baixo, é cego por construção)")
 
     # RRF: item bem colocado nos dois rankings vence um que só vai bem em um
     assert _rrf([0, 1, 2], [0, 2, 1])[0] == 0
