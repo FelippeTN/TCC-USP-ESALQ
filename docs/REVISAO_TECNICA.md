@@ -81,11 +81,11 @@ Use um registro complementar, preservando o manifesto automático.
 
 ```bash
 py -m unittest discover -s tests -v
-py corpus.py
-py queries.py
-py client.py
-py invocation.py
-py retrieval.py
+py src/corpus.py
+py src/queries.py
+py src/client.py
+py src/invocation.py
+py src/retrieval.py
 docker compose config --quiet
 ```
 

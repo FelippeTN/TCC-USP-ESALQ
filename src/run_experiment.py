@@ -4,10 +4,10 @@ Baseline: toolset=50, retrieval=full, invocation=native. Cada eixo varia sozinho
 partir dele, então toda comparação tem exatamente um fator diferente.
 
 Uso:
-    py run_experiment.py --plan-only              # só o plano e a estimativa de custo
-    py run_experiment.py --backend mock           # saída isolada em mock_results_v2.csv
-    py run_experiment.py --backend real --repetitions 1 --limit 8   # piloto barato
-    py run_experiment.py --backend real           # plano completo (retoma de onde parou)
+    py src/run_experiment.py --plan-only              # só o plano e a estimativa de custo
+    py src/run_experiment.py --backend mock           # saída isolada em mock_results_v2.csv
+    py src/run_experiment.py --backend real --repetitions 1 --limit 8   # piloto barato
+    py src/run_experiment.py --backend real           # plano completo (retoma de onde parou)
 """
 import argparse
 import csv
@@ -30,7 +30,7 @@ from retrieval import EmbeddingIndex, select_tools
 
 BASELINE = {"toolset_size": 50, "retrieval": "full", "invocation": "native"}
 
-RESULTS_DIR = Path(__file__).parent / "results"
+RESULTS_DIR = Path(__file__).resolve().parents[1] / "results"
 RAW_CSV = RESULTS_DIR / "raw_results.csv"
 PROTOCOL_VERSION = 2
 

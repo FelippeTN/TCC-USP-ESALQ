@@ -4,7 +4,7 @@
 
 Benchmark controlado sobre três eixos de exposição de ferramentas, com dois LLMs
 servidos localmente. Este README apresenta os resultados, sua interpretação e as
-instruções de reprodução. O [escopo do TCC](ESCOPO.md) detalha a pergunta de pesquisa
+instruções de reprodução. O [escopo do TCC](docs/ESCOPO.md) detalha a pergunta de pesquisa
 e os objetivos; o [apoio à redação](docs/APOIO_DISSERTACAO.md) reúne texto-base,
 legendas e pontos a discutir com o orientador.
 
@@ -84,7 +84,7 @@ As cinco repetições são agregadas por consulta antes do teste bilateral de
 permutação por troca de sinal, com 10.000 permutações e semente 20260830.
 Holm-Bonferroni é aplicado à família de **16 comparações**: oito variantes por modelo.
 As decisões usam valores não arredondados; os arquivos guardam `p` bruto e `p_holm`.
-O cálculo reutiliza as funções de [analyze.py](analyze.py), reiniciando a semente no
+O cálculo reutiliza as funções de [analyze.py](src/analyze.py), reiniciando a semente no
 início de cada família. Pequenas diferenças frente a outros relatórios podem
 decorrer da ordem de consumo do gerador aleatório e da inclusão do braço `random`.
 
@@ -138,7 +138,7 @@ baseline. No Gemma, a direção foi oposta: **1,0223 s**, ante **0,7756 s**.
 Portanto, menos tokens de entrada não implicaram menor latência em todas as condições.
 
 Essas são comparações **descritivas**, sem teste inferencial de custo neste relatório.
-A latência medida em [client.py](client.py) é o tempo HTTP das chamadas de chat,
+A latência medida em [client.py](src/client.py) é o tempo HTTP das chamadas de chat,
 incluindo rede e eventuais retentativas. Ela exclui geração de embeddings, busca
 local e outras etapas do pipeline. Não mede diretamente tempo de GPU, energia ou
 custo monetário. As condições foram executadas em blocos; carga do servidor e
@@ -169,8 +169,8 @@ ampla de que uma técnica elimina alucinações.
 **Figura 6.** Análise adicional que usa `correct × (1 − parse_error)`. A métrica
 primária e os registros originais continuam intactos.
 
-Em [invocation.py](invocation.py), uma falha de parsing pode retornar ausência de
-ferramenta. Em [run_experiment.py](run_experiment.py), essa ausência conta como acerto
+Em [invocation.py](src/invocation.py), uma falha de parsing pode retornar ausência de
+ferramenta. Em [run_experiment.py](src/run_experiment.py), essa ausência conta como acerto
 quando o gabarito é `no_tool`. Assim, **60 das 117 falhas de parsing** aparecem também
 como acertos: 34 no Gemma com `code_action` e 26 com `json_prompt`.
 
@@ -220,7 +220,7 @@ Com o `.env` configurado e as dependências do projeto disponíveis, instale
 
 ```bash
 py -m pip install -r requirements-figures.txt
-py docs/generate_results.py
+py scripts/generate_results.py
 ```
 
 O script faz somente análise local: valida a cobertura das 18 condições, reutiliza
@@ -243,7 +243,7 @@ e no texto de apoio; a redação não é atualizada automaticamente.
 
 ## Infraestrutura
 
-Endpoints OpenAI-compatíveis registrados em [config.py](config.py):
+Endpoints OpenAI-compatíveis registrados em [config.py](src/config.py):
 
 | Serviço | Porta | Model id |
 |---|---|---|
@@ -339,13 +339,13 @@ Configure o `.env` conforme a seção Infraestrutura. As novas coletas são sepa
 por backend e protocolo. O padrão continua sendo `mock`, com saída segura própria.
 
 ```bash
-py run_experiment.py --plan-only                  # plano + estimativa, não chama nada
-py run_experiment.py --backend mock              # results/mock_results_v2.csv
-py run_experiment.py --backend real --repetitions 1 --limit 12 --out results/pilot_v2.csv
-py run_experiment.py --backend real              # results/real_results_v2.csv
-py analyze.py                                   # análise original da coleta histórica
-py analyze.py --input results/real_results_v2.csv
-py analyze.py --input results/real_results_v2.csv --metric correct_valid_parse
+py src/run_experiment.py --plan-only                  # plano + estimativa, não chama nada
+py src/run_experiment.py --backend mock              # results/mock_results_v2.csv
+py src/run_experiment.py --backend real --repetitions 1 --limit 12 --out results/pilot_v2.csv
+py src/run_experiment.py --backend real              # results/real_results_v2.csv
+py src/analyze.py                                   # análise original da coleta histórica
+py src/analyze.py --input results/real_results_v2.csv
+py src/analyze.py --input results/real_results_v2.csv --metric correct_valid_parse
 py -m unittest discover -s tests -v              # regressões locais, sem chamadas aos modelos
 ```
 
@@ -361,8 +361,8 @@ Use `--output-dir <pasta>` para guardar derivados em outra pasta. O analisador
 rejeita duplicatas válidas, métricas inválidas e contrastes sem pareamento de
 consultas ou repetições. Tentativas com erro de execução são informadas e excluídas.
 
-Cada módulo tem autoteste embutido: `py corpus.py`, `py queries.py`, `py client.py`,
-`py invocation.py`, `py retrieval.py`.
+Cada módulo tem autoteste embutido: `py src/corpus.py`, `py src/queries.py`, `py src/client.py`,
+`py src/invocation.py`, `py src/retrieval.py`.
 
 ### Docker (Python 3.14)
 
@@ -374,10 +374,10 @@ docker compose run --rm tcc            # abre o bash dentro do container, em /ap
 Dentro do container os comandos são os mesmos, com `python` no lugar de `py`:
 
 ```bash
-python corpus.py                       # autotestes
-python run_experiment.py --plan-only
-python run_experiment.py --backend real
-python analyze.py --input results/real_results_v2.csv
+python src/corpus.py                       # autotestes
+python src/run_experiment.py --plan-only
+python src/run_experiment.py --backend real
+python src/analyze.py --input results/real_results_v2.csv
 ```
 
 O projeto inteiro é volume (`.:/app`): editar no host reflete na hora, e `results/`
@@ -432,23 +432,25 @@ continuam associados à versão que os produziu; não devem ser misturados às n
 ```text
 TCC-USP-ESALQ/
 ├── README.md                  # resultados, figuras e reprodução
-├── ESCOPO.md                  # pergunta de pesquisa e escopo
-├── config.py                  # configuração e leitura do ambiente
-├── corpus.py / queries.py     # ferramentas e consultas
-├── client.py                  # acesso aos modelos e backend mock
-├── invocation.py / retrieval.py
-├── run_experiment.py          # execução do experimento
-├── analyze.py                 # análise original
-├── compose.yaml
+├── compose.yaml / Dockerfile  # ambiente Docker (Python 3.14)
 ├── requirements.txt           # versões do ambiente de execução e análise
 ├── requirements-figures.txt   # dependência adicional das figuras
-├── docker/Dockerfile
+├── .env.example               # modelo do .env (endereço do servidor)
+├── src/
+│   ├── config.py              # configuração e leitura do ambiente
+│   ├── corpus.py / queries.py # ferramentas e consultas
+│   ├── client.py              # acesso aos modelos e backend mock
+│   ├── invocation.py / retrieval.py
+│   ├── run_experiment.py      # execução do experimento
+│   └── analyze.py             # análise original
+├── scripts/
+│   └── generate_results.py    # geração local das figuras e tabelas
 ├── tests/test_integrity.py    # regressões de parsing, integridade e retomada
 ├── results/                   # dados primários e derivados preexistentes
 └── docs/
-    ├── APOIO_DISSERTACAO.md    # texto-base e orientações de redação
+    ├── ESCOPO.md              # pergunta de pesquisa e escopo
+    ├── APOIO_DISSERTACAO.md   # texto-base e orientações de redação
     ├── REVISAO_TECNICA.md     # versão do instrumento e limites da reprodução
-    ├── generate_results.py    # geração local das figuras e tabelas
     ├── data/                  # tabelas desta apresentação e auditoria
     └── figures/               # seis figuras em PNG e PDF
 ```

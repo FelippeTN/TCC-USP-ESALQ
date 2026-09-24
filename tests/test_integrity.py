@@ -4,6 +4,7 @@ import csv
 import io
 import json
 import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 os.environ.setdefault("TCC_SERVER_HOST", "example.invalid")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import analyze
 import retrieval

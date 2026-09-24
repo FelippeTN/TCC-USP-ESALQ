@@ -7,7 +7,7 @@ IP real derrota o motivo de ele estar no .env.
 import os
 from pathlib import Path
 
-ENV_PATH = Path(__file__).parent / ".env"
+ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 
 
 def _load_env(path: Path = ENV_PATH) -> None:

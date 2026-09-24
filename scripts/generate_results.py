@@ -1,6 +1,6 @@
 """Gera figuras e tabelas do README sem executar ou modificar o experimento.
 
-Uso, na raiz: py docs/generate_results.py
+Uso, na raiz: py scripts/generate_results.py
 Dependências: numpy, pandas, requests (do projeto) e matplotlib (só para figuras).
 """
 import hashlib
@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "src"))
 import analyze as analysis
 from config import REPETITIONS
 from queries import QUERIES
@@ -77,7 +77,7 @@ def save(fig, name, note):
 def main():
     for folder in ("figures", "data"):
         (OUT / folder).mkdir(parents=True, exist_ok=True)
-    protected = list(ROOT.glob("*.py")) + list((ROOT / "results").glob("*.csv"))
+    protected = list((ROOT / "src").glob("*.py")) + list((ROOT / "results").glob("*.csv"))
     hashes = {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in protected}
     raw = pd.read_csv(analysis.RAW_CSV, keep_default_na=False)
     df = analysis.load(analysis.RAW_CSV)
@@ -114,7 +114,7 @@ def main():
                  python=sys.version.split()[0], numpy=np.__version__, pandas=pd.__version__,
                  matplotlib=matplotlib.__version__,
                  generator_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-                 source_hashes={str(p.relative_to(ROOT)): h for p, h in hashes.items()})
+                 source_hashes={p.relative_to(ROOT).as_posix(): h for p, h in hashes.items()})
     (OUT / "data" / "audit.json").write_text(json.dumps(audit, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10,
                          "axes.spines.top": False, "axes.spines.right": False,

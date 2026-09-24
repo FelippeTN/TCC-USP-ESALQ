@@ -27,7 +27,7 @@ from config import CORE_DOMAINS, RETRIEVAL_K
 
 RETRIEVAL_MODES = ("full", "random", "embedding", "hybrid", "two_stage")
 
-CACHE_DIR = Path(__file__).parent / "results"
+CACHE_DIR = Path(__file__).resolve().parents[1] / "results"
 _RRF_K = 60  # constante padrão do Reciprocal Rank Fusion (Cormack et al., 2009)
 
 

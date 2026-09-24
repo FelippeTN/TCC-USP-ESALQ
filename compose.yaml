@@ -1,8 +1,6 @@
 services:
   tcc:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
+    build: .
     # o projeto inteiro é volume: editar no Windows reflete no container na hora,
     # e results/ fica no host — o dado primário não some junto com o container
     env_file: .env
