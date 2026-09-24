@@ -11,13 +11,12 @@ durante a implementação. As mudanças estão registradas na seção *Históric
 
 **A forma de expor ferramentas condiciona acurácia, alucinação e custo em agentes LLM**
 
-Título alternativo, a adotar se o achado de invocação se confirmar como o principal:
+Título alternativo ainda não sustentado por uma comparação direta entre técnicas:
 
 **O mecanismo de invocação supera a recuperação na acurácia de agentes LLM**
 
-A escolha entre os dois depende dos resultados finais. O primeiro é neutro quanto
-à direção; o segundo compromete com um achado e só pode ser adotado depois da
-rodada completa com o braço `random`.
+O título principal permanece como referência. Os resultados contra o baseline
+não demonstram, por si só, superioridade direta da invocação sobre a recuperação.
 
 ---
 
@@ -51,7 +50,7 @@ código aberto servidos localmente.
 
 - **Baseline:** `toolset=50`, `retrieval=full`, `invocation=native`
 - **Eixo 1 — exposição:** 10 / 30 / 50 ferramentas
-- **Eixo 2 — recuperação:** `full` / `random` / `embedding` / `hybrid` / `two_stage`, k=5
+- **Eixo 2 — recuperação:** `full` / `random` / `embedding` / `hybrid` / `two_stage`; k=5 nos três métodos top-k
 - **Eixo 3 — invocação:** `native` / `json_prompt` / `code_action`
 
 18 condições (9 por modelo), 64 queries, 5 repetições → 6.400 chamadas ao LLM.
@@ -64,7 +63,8 @@ código aberto servidos localmente.
 | LLM B | gemma-4-E4B-it |
 | Embeddings | qwen3-embedding-8B (4096 dim) |
 
-Ambos self-hosted, endpoints OpenAI-compatíveis. Custo é tempo de GPU, não token.
+Ambos servidos localmente por endpoints OpenAI-compatíveis. São medidos tokens
+de entrada e latência HTTP; não há medição direta de tempo de GPU ou custo financeiro.
 
 ### Corpus e queries
 
@@ -76,20 +76,23 @@ Ambos self-hosted, endpoints OpenAI-compatíveis. Custo é tempo de GPU, não to
 
 ### Instrumentos de medida (não são técnicas candidatas)
 
-- **`random`** — piso. Expõe 5 ferramentas sorteadas. Isola o ganho que vem apenas
-  de encurtar o prompt do ganho que vem da relevância da recuperação. Recall@5
-  medido: 0,10, coerente com 5/50 por acaso.
+- **`random`** — controle que expõe cinco ferramentas sorteadas. A disponibilidade
+  de ao menos uma ferramenta correta foi de 10,42% nas consultas com ferramenta.
+  Mantém o número exposto comparável, mas não isola um efeito puro de tamanho,
+  pois também pode remover o gabarito. O sorteio é fixo por consulta.
 - **`retrieval_hit`** — calculado em toda linha, não só numa condição dedicada.
   Indica se o gabarito sobreviveu à recuperação, separando erro de retrieval de
-  erro de decisão do modelo. Cumpre o papel que um braço `oracle` cumpriria, sem
-  gastar uma condição inteira do plano.
+  erro de decisão do modelo. É um indicador observado, não uma intervenção oracle.
 
 ### Métricas
 
 `correct`, `hallucinated`, `invented_tool`, `lure_hit`, `parse_error`,
 `retrieval_hit`, `prompt_tokens` (somando a 1ª etapa do `two_stage`), `latency_s`.
 
-### Estatística (pré-registrada)
+### Estatística documentada no projeto
+
+A anterioridade ou existência de um pré-registro externo precisa de comprovação
+datada; os comentários do código não substituem essa evidência.
 
 - Unidade de análise: a **query**. As 5 repetições viram a média por query antes
   do teste, para não inflar o N com observações não independentes.
@@ -118,8 +121,8 @@ Ambos self-hosted, endpoints OpenAI-compatíveis. Custo é tempo de GPU, não to
 2. **OFAT não estima interações** — o efeito de `embedding` é conhecido em
    toolset=50, e o efeito do tamanho apenas sob `full`. A leitura "X piora conforme
    o toolset cresce" não é sustentada por este desenho.
-3. **Dois modelos self-hosted de porte semelhante** — os achados não se estendem a
-   modelos de fronteira.
+3. **Dois modelos servidos localmente** — os achados não se estendem automaticamente
+   a outras famílias de modelos.
 4. **Busca léxica do `hybrid`** é sobreposição de tokens, não BM25.
 5. **`k=5` fixo.**
 6. **Um único avaliador** no gabarito das queries (`reviewed_by` pendente). Uma
@@ -147,12 +150,15 @@ separação entre falha de recuperação e falha de decisão.
 | 2026-08-30 | Dois modelos passam a compor dimensão comparativa (antes: um modelo, comparação entre modelos fora do escopo) | Servidores locais tornam o custo marginal desprezível; permite verificar se os efeitos se sustentam entre modelos |
 | 2026-08-30 | Eixo "representação" (`full`/`compact`/`name_only`) substituído por eixo "recuperação" (`full`/`embedding`/`hybrid`/`two_stage`) | Recuperação responde mais diretamente à pergunta de pesquisa; representação fica para trabalhos futuros |
 | 2026-09-07 | Braço `random` adicionado ao eixo de recuperação | Sem piso, o ganho de `embedding`/`hybrid` sobre `full` é ambíguo entre "menos ruído" e "mais relevância" |
+| 2026-09-07 | Protocolo 2 do executor e validação da análise | Parsing validado, dados novos separados por origem e métrica de sensibilidade explícita; coleta histórica preservada |
 
 ### Pendências antes de fechar a redação
 
-- [ ] Rodar as 640 linhas novas do braço `random` (o resume pula as 5.120 já feitas).
-- [ ] Reexecutar `analyze.py` e reavaliar se os achados de `embedding`/`hybrid`
-      sobrevivem à comparação contra o piso.
+- [x] Incorporar as 640 execuções de `random`; a base histórica contém 5.760 execuções válidas.
+- [x] Recalcular as 18 condições e apresentar os contrastes exploratórios contra
+      `random`, com família Holm separada em `docs/data/`.
+- [x] Documentar a sensibilidade às falhas de parsing, mantendo `correct` original.
+- [x] Proteger novas coletas por backend, protocolo e manifesto de origem.
 - [ ] Validar com o orientador a inclusão dos dois modelos como dimensão.
 - [ ] Preencher `reviewed_by` no dataset de queries (segundo avaliador).
 - [ ] Fixar o título depois dos resultados finais.

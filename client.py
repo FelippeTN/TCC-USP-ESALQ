@@ -18,7 +18,7 @@ class LLMError(RuntimeError):
 
 
 def _post(url: str, payload: dict) -> dict:
-    """POST com retry exponencial. Erros 4xx não são retentados (é bug de payload, não flake)."""
+    """POST com retentativas para falhas de rede e servidor; erros 4xx são propagados."""
     last = None
     for attempt in range(MAX_RETRIES):
         try:
@@ -75,7 +75,7 @@ def _seed(*parts) -> random.Random:
 
 
 class MockClient:
-    """Simula respostas: 70% acerta a 1ª ferramenta plausível, senão erra ou não chama nada."""
+    """Escolhe ferramenta aleatória com probabilidade de 70%; não estima acurácia real."""
 
     def chat(self, model_key, messages, tools=None, max_tokens=512, temperature=0.0):
         system = next((m["content"] for m in messages if m["role"] == "system"), "")

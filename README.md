@@ -8,6 +8,11 @@ instruções de reprodução. O [escopo do TCC](ESCOPO.md) detalha a pergunta de
 e os objetivos; o [apoio à redação](docs/APOIO_DISSERTACAO.md) reúne texto-base,
 legendas e pontos a discutir com o orientador.
 
+**Versão do instrumento:** os gráficos abaixo descrevem a coleta histórica.
+O executor atual usa o **protocolo 2**, com correções de parsing, identificação de
+origem e saídas separadas. Nenhuma resposta histórica foi reinterpretada ou
+substituída. Consulte o [registro da revisão e da reprodução](docs/REVISAO_TECNICA.md).
+
 ## Resultados: síntese da base de 7 de setembro de 2026
 
 A base analisada contém **5.760 execuções válidas: 18 condições × 64 consultas ×
@@ -186,8 +191,9 @@ família separada: [testes de sensibilidade](docs/data/sensitivity_tests.csv).
 
 Essa análise testa uma exigência operacional adicional; não substitui retrospectivamente
 a métrica principal. Também não verifica os valores dos argumentos nem executa as
-ferramentas. No modo `native`, o parser retorna `parse_error=False` por construção,
-portanto o zero registrado não certifica a validade de toda resposta do servidor.
+ferramentas. Na versão usada na coleta histórica, o parser `native` retornava
+`parse_error=False` por construção. O protocolo 2 valida a estrutura da chamada;
+isso não altera o zero registrado anteriormente nem certifica os argumentos.
 
 ## Como usar os resultados na dissertação
 
@@ -213,7 +219,7 @@ Com o `.env` configurado e as dependências do projeto disponíveis, instale
 `matplotlib` no ambiente usado apenas para gerar a documentação:
 
 ```bash
-py -m pip install matplotlib
+py -m pip install -r requirements-figures.txt
 py docs/generate_results.py
 ```
 
@@ -323,18 +329,37 @@ casos em que não há ferramenta a recuperar.
 
 ## Como rodar
 
+Para preparar o ambiente local (Python 3.14.0), instale as versões registradas:
+
 ```bash
-py run_experiment.py --plan-only                  # plano + estimativa, não chama nada
-py run_experiment.py --backend mock --out results/smoke.csv  # use uma saída separada para mock
-py run_experiment.py --backend real --repetitions 1 --limit 12 --out results/pilot.csv
-py run_experiment.py --backend real               # plano completo, retoma de onde parou
-py analyze.py                                     # métricas + testes OFAT
-py analyze.py --input results/pilot.csv           # grava com sufixo _pilot, não sobrescreve
+py -m pip install -r requirements.txt
 ```
 
-> Analisar um arquivo que não é o `raw_results.csv` gera derivados com sufixo
-> (`summary_by_condition_pilot.csv`). Sem isso, analisar um piloto ou um teste com
-> backend mock substituiria os CSVs dos resultados reais sem aviso.
+Configure o `.env` conforme a seção Infraestrutura. As novas coletas são separadas
+por backend e protocolo. O padrão continua sendo `mock`, com saída segura própria.
+
+```bash
+py run_experiment.py --plan-only                  # plano + estimativa, não chama nada
+py run_experiment.py --backend mock              # results/mock_results_v2.csv
+py run_experiment.py --backend real --repetitions 1 --limit 12 --out results/pilot_v2.csv
+py run_experiment.py --backend real              # results/real_results_v2.csv
+py analyze.py                                   # análise original da coleta histórica
+py analyze.py --input results/real_results_v2.csv
+py analyze.py --input results/real_results_v2.csv --metric correct_valid_parse
+py -m unittest discover -s tests -v              # regressões locais, sem chamadas aos modelos
+```
+
+Cada novo CSV recebe um manifesto `<arquivo>.csv.meta.json`, com backend, protocolo,
+versões locais e hashes do código. A retomada exige origem e ambiente compatíveis;
+arquivos legados, inclusive `raw_results.csv`, não recebem novas linhas. Se mudar
+código ou ambiente, escolha outro `--out`. O nome de uma execução (`run_id`) é único
+dentro desse arquivo e da origem registrada, não globalmente entre backends.
+
+`correct` conserva a definição histórica; `correct_valid_parse` exige também
+ausência de erro de parsing. A segunda análise escreve arquivos com sufixo próprio.
+Use `--output-dir <pasta>` para guardar derivados em outra pasta. O analisador
+rejeita duplicatas válidas, métricas inválidas e contrastes sem pareamento de
+consultas ou repetições. Tentativas com erro de execução são informadas e excluídas.
 
 Cada módulo tem autoteste embutido: `py corpus.py`, `py queries.py`, `py client.py`,
 `py invocation.py`, `py retrieval.py`.
@@ -352,16 +377,15 @@ Dentro do container os comandos são os mesmos, com `python` no lugar de `py`:
 python corpus.py                       # autotestes
 python run_experiment.py --plan-only
 python run_experiment.py --backend real
-python analyze.py
+python analyze.py --input results/real_results_v2.csv
 ```
 
 O projeto inteiro é volume (`.:/app`): editar no host reflete na hora, e `results/`
 fica no host — o dado primário não morre junto com o container.
 
-> **Um executor por vez.** Host e container escrevem no mesmo `results/raw_results.csv`.
-> O resume evita repetir trabalho, mas dois processos anexando ao mesmo CSV
-> intercalam linhas e corrompem o dado primário. Use `--out` separado se precisar
-> rodar os dois.
+> **Um executor por arquivo.** Host e container compartilham `results/`.
+> A retomada evita repetir execuções válidas, mas não implementa bloqueio para
+> gravação concorrente. Use `--out` separado para processos simultâneos.
 
 O runner grava linha a linha com `flush` e retoma pelo `run_id`: queda, timeout ou
 rate limit não perdem o lote nem duplicam trabalho. Linhas com erro são regravadas
@@ -375,7 +399,8 @@ na próxima execução.
 ## Dados
 
 `results/raw_results.csv` é o **dado primário do TCC** e é versionado no git. Não
-regenerar por cima sem necessidade: o runner já retoma sem duplicar.
+é sobrescrito nem ampliado pelo protocolo 2. Os resultados e gráficos históricos
+continuam associados à versão que os produziu; não devem ser misturados às novas coletas.
 
 ## Limitações declaradas
 
@@ -394,7 +419,7 @@ regenerar por cima sem necessidade: o runner já retoma sem duplicar.
 - O braço `random` foi executado em outra data e usa um único sorteio por consulta.
 - A invocação altera simultaneamente o formato de exposição, as instruções e o
   parser. O desenho não identifica separadamente qual componente explica o efeito.
-- O CSV não registra o backend, a revisão exata dos pesos nem a resposta bruta do
+- O CSV histórico não registra o backend, a revisão exata dos pesos nem a resposta bruta do
   servidor. A identidade dos modelos vem da configuração do projeto; a proveniência
   de cada execução deve ser corroborada pelos registros de execução disponíveis.
 - As repetições usam temperatura 0 e as mesmas consultas. Não substituem novas
@@ -415,10 +440,14 @@ TCC-USP-ESALQ/
 ├── run_experiment.py          # execução do experimento
 ├── analyze.py                 # análise original
 ├── compose.yaml
+├── requirements.txt           # versões do ambiente de execução e análise
+├── requirements-figures.txt   # dependência adicional das figuras
 ├── docker/Dockerfile
+├── tests/test_integrity.py    # regressões de parsing, integridade e retomada
 ├── results/                   # dados primários e derivados preexistentes
 └── docs/
     ├── APOIO_DISSERTACAO.md    # texto-base e orientações de redação
+    ├── REVISAO_TECNICA.md     # versão do instrumento e limites da reprodução
     ├── generate_results.py    # geração local das figuras e tabelas
     ├── data/                  # tabelas desta apresentação e auditoria
     └── figures/               # seis figuras em PNG e PDF

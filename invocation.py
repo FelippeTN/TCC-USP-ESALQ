@@ -82,9 +82,20 @@ def parse_response(mode: str, message: dict) -> tuple[str | None, bool]:
     """Retorna (nome_da_ferramenta | None, parse_error)."""
     if mode == "native":
         calls = message.get("tool_calls") or []
-        return (calls[0]["function"]["name"], False) if calls else (None, False)
+        if not calls:
+            return None, False
+        if not isinstance(calls, list) or len(calls) != 1:
+            return None, True
+        try:
+            name = calls[0]["function"]["name"]
+        except (KeyError, TypeError):
+            return None, True
+        return (name, False) if isinstance(name, str) and name.strip() else (None, True)
 
-    text = _strip_fence(message.get("content") or "")
+    content = message.get("content") or ""
+    if not isinstance(content, str):
+        return None, True
+    text = _strip_fence(content)
     if not text:
         return None, True
 
@@ -100,14 +111,16 @@ def parse_response(mode: str, message: dict) -> tuple[str | None, bool]:
         tool = obj["tool"]
         if tool is None:
             return None, False
-        return (tool, False) if isinstance(tool, str) else (None, True)
+        return (tool, False) if isinstance(tool, str) and tool.strip() else (None, True)
 
     if mode == "code_action":
-        line = text.splitlines()[0].strip() if text.splitlines() else ""
         try:
-            node = ast.parse(line, mode="exec").body[0]
+            statements = ast.parse(text, mode="exec").body
         except SyntaxError:
             return None, True
+        if len(statements) != 1:
+            return None, True
+        node = statements[0]
         if isinstance(node, ast.Pass):
             return None, False
         if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name):

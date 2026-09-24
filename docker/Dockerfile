@@ -1,7 +1,8 @@
-FROM python:3.14-slim
+FROM python:3.14.0-slim
 
 WORKDIR /app
-RUN pip install --no-cache-dir numpy pandas requests
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 CMD ["bash"]

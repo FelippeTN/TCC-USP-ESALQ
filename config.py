@@ -13,8 +13,7 @@ ENV_PATH = Path(__file__).parent / ".env"
 def _load_env(path: Path = ENV_PATH) -> None:
     """Lê KEY=value do .env sem sobrescrever o que já veio do ambiente.
 
-    ponytail: parser mínimo (comentários, aspas, espaços). Trocar por python-dotenv
-    se o .env virar algo mais complicado que três variáveis.
+    Suporta comentários em linhas próprias e aspas externas, sem interpolação.
     """
     if not path.exists():
         return
@@ -56,10 +55,7 @@ EMBEDDING_MODEL = {
 TOOLSET_SIZES = [10, 30, 50]
 
 # Eixo 2 — recuperação de ferramentas
-# `random` é PISO de comparação, não uma técnica candidata: expõe k ferramentas
-# sorteadas. Sem ele não se distingue "a recuperação achou o que importa" de
-# "reduzir o toolset já ajuda por si só" — embedding/hybrid precisam superá-lo
-# para que o ganho seja atribuído à relevância, e não ao tamanho do prompt.
+# Controle aleatório com k ferramentas; não garante a presença do gabarito.
 RETRIEVAL_MODES = ["full", "random", "embedding", "hybrid", "two_stage"]
 RETRIEVAL_K = 5
 
@@ -71,10 +67,10 @@ CORE_DOMAINS = ["messages", "users", "groups", "notifications"]
 
 REPETITIONS = 5
 
-# Estatística — decididos antes de rodar (pré-registro)
+# Parâmetros estatísticos documentados no escopo do projeto.
 ALPHA = 0.05
 MULTIPLE_COMPARISON_CORRECTION = "holm"
-MIN_RELEVANT_EFFECT = 0.05  # 5 p.p. de acurácia: diferença menor que isso é significativa mas irrelevante
+MIN_RELEVANT_EFFECT = 0.05  # relevância prática de 5 p.p., independente da significância
 
 # preço aproximado por 1M tokens (input, output) — ajustar conforme tabela real do provedor local
 TOKEN_PRICE_USD = {

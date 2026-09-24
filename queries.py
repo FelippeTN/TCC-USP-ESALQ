@@ -10,7 +10,7 @@
 - no_tool     → nenhuma ferramenta se aplica. Chamar qualquer uma = alucinação.
 
 REVISÃO: cada item tem `reviewed_by`. Preencher com as iniciais do segundo avaliador
-depois da conferência independente do gabarito (ver README, seção Validade).
+depois da conferência independente do gabarito (ver ESCOPO.md, pendências).
 """
 
 # (id, tipo, texto, expected, lure)

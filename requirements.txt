@@ -1,0 +1,11 @@
+# Ambiente Python validado nesta revisão; não certifica o ambiente remoto da coleta.
+numpy==2.4.4
+pandas==3.0.3
+requests==2.32.5
+python-dateutil==2.9.0.post0
+six==1.17.0
+certifi==2026.2.25
+charset-normalizer==3.4.4
+idna==3.11
+urllib3==2.6.3
+tzdata==2026.2

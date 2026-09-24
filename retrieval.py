@@ -6,17 +6,14 @@ embedding → top-k por similaridade de cosseno query↔descrição (qwen3-embed
 hybrid    → fusão RRF entre embedding e busca léxica (sobrepesa nomes/termos exatos)
 two_stage → 1ª chamada ao LLM escolhe o domínio, 2ª recebe só as ferramentas dele
 
-`random` não é candidata a uso prático: é instrumento de medida. Reduzir o toolset
-de 50 para 5 ajuda o modelo por dois motivos distintos — menos ruído no prompt, e
-as ferramentas certas em evidência. `random` isola o primeiro: qualquer ganho de
-embedding/hybrid ACIMA do random é o que se atribui à relevância da recuperação.
-Sem esse piso, um ganho de embedding sobre `full` é ambíguo entre os dois efeitos.
+`random` é um controle aleatório com o mesmo número de ferramentas dos métodos
+top-k. A comparação avalia a seleção relevante frente ao sorteio; não isola um
+efeito puro de tamanho, pois o sorteio também pode remover o gabarito.
 
 O sorteio é semeado por query (não por execução): o mesmo toolset sai em qualquer
 repetição, modelo ou máquina, então a comparação permanece pareada e reprodutível.
 
-two_stage é a única que gasta uma chamada extra por query — é a linha a cortar
-primeiro se o orçamento apertar.
+two_stage acrescenta uma chamada de classificação de domínio por consulta.
 """
 import json
 import random
@@ -103,9 +100,10 @@ def _embedding_ranking(index: EmbeddingIndex, query: str, tools: list[dict]) -> 
 
 
 def _lexical_ranking(query: str, tools: list[dict]) -> list[int]:
-    """Sobreposição de tokens normalizada pelo tamanho do documento — BM25 pobre,
-    mas suficiente: o papel do braço léxico aqui é pegar nome exato de ferramenta.
-    ponytail: se a busca léxica virar objeto de estudo, trocar por BM25 de verdade."""
+    """Sobreposição de tokens normalizada pelo tamanho do documento.
+
+    Favorece correspondências lexicais; não implementa BM25.
+    """
     q = _tokens(query)
     scores = []
     for t in tools:
@@ -212,7 +210,7 @@ if __name__ == "__main__":
     assert _rrf([0, 1, 2], [0, 2, 1])[0] == 0
 
     class _StubIndex:
-        """Embeddings determinísticos e degenerados só para exercitar o caminho de código."""
+        """Vetores sintéticos para exercitar o caminho de código, sem medir qualidade."""
         def encode(self, texts):
             a = np.array([[hash((t, i)) % 97 for i in range(8)] for t in texts], dtype=np.float64)
             return a / np.clip(np.linalg.norm(a, axis=1, keepdims=True), 1e-12, None)

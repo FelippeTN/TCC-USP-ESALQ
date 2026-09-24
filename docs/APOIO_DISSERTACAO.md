@@ -1,5 +1,8 @@
 # Apoio à redação: resultados e discussão
 
+Este texto descreve a coleta histórica. O [protocolo 2](REVISAO_TECNICA.md) corrige
+o instrumento para novas coletas, sem reinterpretar as respostas antigas.
+
 Texto-base elaborado a partir do recorte de `results/raw_results.csv` identificado
 em [audit.json](data/audit.json). Os números se referem a 5.760 execuções válidas,
 18 condições, 64 consultas e cinco repetições. A fonte de cada quadro é a análise
