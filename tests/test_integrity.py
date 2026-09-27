@@ -29,12 +29,12 @@ class IntegrityTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.folder = Path(self.temp.name)
 
-    def execute(self, content):
+    def execute(self, content, query=None):
         class StubClient:
             def chat(self, *args, **kwargs):
                 return {"message": {"content": content}, "usage": {}, "latency_s": 0.0}
 
-        query = next(q for q in QUERIES if q["type"] == "no_tool")
+        query = query or next(q for q in QUERIES if q["type"] == "no_tool")
         condition = dict(runner.BASELINE, model="gemma-4-e4b", axis="invocacao", invocation="code_action")
         return runner.execute_one(StubClient(), None, condition, query, 1, backend="mock")
 
@@ -138,7 +138,7 @@ class IntegrityTests(unittest.TestCase):
         with patch("sys.argv", argv), patch.object(runner, "RESULTS_DIR", self.folder), \
                 patch.object(retrieval, "CACHE_DIR", self.folder), contextlib.redirect_stdout(io.StringIO()):
             runner.main()
-            path = self.folder / "mock_results_v2.csv"
+            path = self.folder / f"mock_results_v{runner.PROTOCOL_VERSION}.csv"
             before = path.read_bytes()
             runner.main()
             self.assertEqual(before, path.read_bytes())
@@ -154,6 +154,48 @@ class IntegrityTests(unittest.TestCase):
         unequal_repetitions.loc[unequal_repetitions.toolset_size == 10, "repetition"] = 2
         with self.assertRaisesRegex(ValueError, "Repetições não pareadas"):
             analyze.ofat_tests(unequal_repetitions)
+
+    def exposed_order(self, query, model, rep, retrieval="full"):
+        seen = {}
+
+        class CaptureClient:
+            def chat(self, model_key, messages, tools=None, **kwargs):
+                seen["names"] = [t["function"]["name"] for t in tools]
+                return {"message": {"content": "ok", "tool_calls": None}, "usage": {}, "latency_s": 0.0}
+
+        condition = dict(runner.BASELINE, model=model, axis="recuperacao", retrieval=retrieval)
+        row = runner.execute_one(CaptureClient(), None, condition, query, rep, backend="mock")
+        self.assertEqual(row["error"], "")
+        return seen["names"], row
+
+    def test_exposed_order_varies_by_repetition_not_by_model(self):
+        self.assertIn("expected_position", runner.FIELDS)
+        query = next(q for q in QUERIES if q["type"] == "direct")
+        rep1, row1 = self.exposed_order(query, "deepseek-v4-flash", 1)
+        rep2, _ = self.exposed_order(query, "deepseek-v4-flash", 2)
+        other, row_other = self.exposed_order(query, "gemma-4-e4b", 1)
+        self.assertEqual(sorted(rep1), sorted(rep2))
+        self.assertNotEqual(rep1, rep2)
+        self.assertEqual(rep1, other)
+        self.assertEqual(row1["expected_position"], rep1.index(query["expected"][0]))
+        self.assertEqual(row_other["expected_position"], row1["expected_position"])
+        positions = {self.exposed_order(query, "deepseek-v4-flash", r)[1]["expected_position"] for r in range(1, 6)}
+        self.assertGreater(len(positions), 1)
+        missed = next(row for q in QUERIES if q["expected"]
+                      for row in [self.exposed_order(q, "gemma-4-e4b", 1, retrieval="random")[1]]
+                      if not row["retrieval_hit"])
+        self.assertEqual(missed["expected_position"], "")
+        self.assertEqual(self.execute("pass")["expected_position"], "")
+
+    def test_near_miss_rewards_abstention_and_flags_the_lure(self):
+        near = [q for q in QUERIES if q["type"] == "near_miss"]
+        self.assertEqual(len(near), 16)
+        self.assertTrue(all(not q["expected"] and q["lure"] for q in near))
+        query = near[0]
+        row = self.execute("pass", query)
+        self.assertEqual((row["correct"], row["hallucinated"], row["lure_hit"], row["parse_error"]), (1, 0, 0, 0))
+        row = self.execute(f"{query['lure']}()", query)
+        self.assertEqual((row["correct"], row["hallucinated"], row["lure_hit"], row["invented_tool"]), (0, 1, 1, 0))
 
     def test_permutation_and_holm_sanity(self):
         self.assertEqual(analyze.holm([0.001, 0.04, 0.9]), [True, False, False])

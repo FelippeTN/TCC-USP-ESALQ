@@ -3,9 +3,12 @@
 Baseline: toolset=50, retrieval=full, invocation=native. Cada eixo varia sozinho a
 partir dele, então toda comparação tem exatamente um fator diferente.
 
+Protocolo 3: a ordem das ferramentas expostas é sorteada por (consulta, repetição),
+igual para os dois modelos.
+
 Uso:
     py src/run_experiment.py --plan-only              # só o plano e a estimativa de custo
-    py src/run_experiment.py --backend mock           # saída isolada em mock_results_v2.csv
+    py src/run_experiment.py --backend mock           # saída isolada em mock_results_v3.csv
     py src/run_experiment.py --backend real --repetitions 1 --limit 8   # piloto barato
     py src/run_experiment.py --backend real           # plano completo (retoma de onde parou)
 """
@@ -15,6 +18,7 @@ import hashlib
 import itertools
 import json
 import platform
+import random
 import sys
 import time
 from importlib.metadata import version
@@ -32,7 +36,7 @@ BASELINE = {"toolset_size": 50, "retrieval": "full", "invocation": "native"}
 
 RESULTS_DIR = Path(__file__).resolve().parents[1] / "results"
 RAW_CSV = RESULTS_DIR / "raw_results.csv"
-PROTOCOL_VERSION = 2
+PROTOCOL_VERSION = 3
 
 LEGACY_FIELDS = [
     "run_id", "model", "toolset_size", "retrieval", "invocation", "repetition",
@@ -43,7 +47,8 @@ LEGACY_FIELDS = [
     "stage1_prompt_tokens", "stage1_completion_tokens", "stage1_latency_s",
     "error", "timestamp",
 ]
-FIELDS = LEGACY_FIELDS + ["backend", "protocol_version", "correct_valid_parse", "response_message"]
+FIELDS = LEGACY_FIELDS + ["backend", "protocol_version", "correct_valid_parse",
+                          "expected_position", "response_message"]
 
 
 def build_conditions(models: list[str]) -> list[dict]:
@@ -73,7 +78,7 @@ def run_id(cond: dict, query_id: str, rep: int) -> str:
 def load_done(path: Path, backend: str) -> set[str]:
     """Valida a origem e retoma somente execuções válidas do mesmo protocolo."""
     if path.resolve() == RAW_CSV.resolve() or (path.exists() and RAW_CSV.exists() and path.samefile(RAW_CSV)):
-        raise ValueError("raw_results.csv é a coleta histórica; escolha outro --out para o protocolo 2.")
+        raise ValueError(f"raw_results.csv é a coleta histórica; escolha outro --out para o protocolo {PROTOCOL_VERSION}.")
     if not path.exists():
         return set()
     with path.open(encoding="utf-8", newline="") as f:
@@ -136,6 +141,10 @@ def execute_one(client, index, cond: dict, query: dict, rep: int, *, backend: st
         exposed, info = select_tools(
             cond["retrieval"], query["text"], tools,
             index=index, client=client, model_key=cond["model"], k=RETRIEVAL_K)
+        exposed = list(exposed)
+        random.Random(f"{query['id']}|r{rep}|order").shuffle(exposed)
+        row["expected_position"] = next(
+            (i for i, t in enumerate(exposed) if t["name"] in query["expected"]), "")
 
         messages, tools_param = build_request(cond["invocation"], query["text"], exposed)
         r = client.chat(cond["model"], messages, tools=tools_param)

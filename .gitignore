@@ -14,7 +14,7 @@ results/run_full.log
 results/*_smoke.csv
 results/*_pilot.csv
 
-# Execuções simuladas do protocolo 2 e respectivos derivados/manifestos.
-results/mock_results_v2.csv*
-results/*_mock_results_v2*.csv
+# Execuções simuladas (qualquer protocolo) e respectivos derivados/manifestos.
+results/mock_results_v*.csv*
+results/*_mock_results_v*.csv
 .venv/

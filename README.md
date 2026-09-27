@@ -215,12 +215,12 @@ para Resultados, Discussão e Conclusão. Todas as figuras estão disponíveis e
 
 ## Reprodução das figuras e tabelas
 
-Com o `.env` configurado e as dependências do projeto disponíveis, instale
-`matplotlib` no ambiente usado apenas para gerar a documentação:
+Com o `.env` configurado e as dependências de `requirements.txt` instaladas (o
+Matplotlib já está incluído):
 
 ```bash
-py -m pip install -r requirements-figures.txt
-py scripts/generate_results.py
+py scripts/generate_results.py                       # coleta histórica → docs/
+py scripts/generate_results.py --input results/real_results_v3.csv --out docs
 ```
 
 O script faz somente análise local: valida a cobertura das 18 condições, reutiliza
@@ -434,7 +434,6 @@ TCC-USP-ESALQ/
 ├── README.md                  # resultados, figuras e reprodução
 ├── compose.yaml / Dockerfile  # ambiente Docker (Python 3.14)
 ├── requirements.txt           # versões do ambiente de execução e análise
-├── requirements-figures.txt   # dependência adicional das figuras
 ├── .env.example               # modelo do .env (endereço do servidor)
 ├── src/
 │   ├── config.py              # configuração e leitura do ambiente

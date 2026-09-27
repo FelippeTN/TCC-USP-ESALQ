@@ -1,6 +1,6 @@
 """Dataset de queries em pt-BR — instrumento primário do experimento.
 
-64 queries, 16 por tipo. O gabarito (`expected`) é o que define acurácia e alucinação:
+80 queries, 16 por tipo. O gabarito (`expected`) é o que define acurácia e alucinação:
 
 - direct      → uma ferramenta claramente correta. `expected` = nome dela.
 - ambiguous   → a query cabe em mais de uma ferramenta de um par confusável.
@@ -8,6 +8,9 @@
 - distractor  → a ferramenta correta existe, mas o texto evoca lexicalmente outra
                 (o `lure`). Mede alucinação induzida por similaridade de superfície.
 - no_tool     → nenhuma ferramenta se aplica. Chamar qualquer uma = alucinação.
+- near_miss   → pedido do domínio que nenhuma ferramenta do corpus atende (protocolo 3).
+                `expected` vazio; o `lure` é a ferramenta vizinha mais tentadora.
+                Abster-se = acerto; chamar qualquer ferramenta = alucinação.
 
 REVISÃO: cada item tem `reviewed_by`. Preencher com as iniciais do segundo avaliador
 depois da conferência independente do gabarito (ver ESCOPO.md, pendências).
@@ -88,6 +91,24 @@ _QUERIES = [
     ("n14", "no_tool", "Sugere uma pauta pra retrospectiva de sprint.", None, None),
     ("n15", "no_tool", "Corrige a gramática: 'nós vai enviar o relatorio amanha'.", None, None),
     ("n16", "no_tool", "Nada por enquanto, depois eu te chamo.", None, None),
+
+    # ---------- near_miss (16) ----------
+    ("m01", "near_miss", "Traduz a mensagem msg_44 para o inglês.", None, "edit_message"),
+    ("m02", "near_miss", "Quantas mensagens o u_15 mandou este mês?", None, "list_messages"),
+    ("m03", "near_miss", "Desafixa a mensagem msg_77 do topo do chat.", None, "pin_message"),
+    ("m04", "near_miss", "Tira a reação 👍 que eu coloquei na mensagem msg_90.", None, "react_to_message"),
+    ("m05", "near_miss", "Cancela o convite que eu mandei pro marcos@parceiro.com.", None, "invite_user"),
+    ("m06", "near_miss", "Junta as contas duplicadas u_12 e u_13 num usuário só.", None, "update_user"),
+    ("m07", "near_miss", "Mostra o histórico de logins do u_301 na última semana.", None, "get_user_status"),
+    ("m08", "near_miss", "Lista os usuários que eu bloqueei.", None, "list_users"),
+    ("m09", "near_miss", "Cria uma enquete no grupo g_12.", None, "create_group"),
+    ("m10", "near_miss", "Desarquiva o grupo g_7.", None, "archive_group"),
+    ("m11", "near_miss", "Restaura o grupo g_30 que foi excluído ontem.", None, "delete_group"),
+    ("m12", "near_miss", "Troca a foto do grupo g_30.", None, "rename_group"),
+    ("m13", "near_miss", "Marca a notificação not_12 como não lida.", None, "mark_notification_read"),
+    ("m14", "near_miss", "Quantas pessoas abriram a notificação not_55?", None, "get_notification_status"),
+    ("m15", "near_miss", "Salva um modelo de notificação para os avisos de manutenção.", None, "send_notification"),
+    ("m16", "near_miss", "Adia a notificação agendada not_91 para sexta-feira.", None, "schedule_notification"),
 ]
 
 QUERIES = [
@@ -104,7 +125,8 @@ QUERIES = [
     for qid, qtype, text, expected, lure in _QUERIES
 ]
 
-QUERY_TYPES = ("direct", "ambiguous", "distractor", "no_tool")
+QUERY_TYPES = ("direct", "ambiguous", "distractor", "no_tool", "near_miss")
+ABSTENTION_TYPES = ("no_tool", "near_miss")
 
 
 if __name__ == "__main__":
@@ -123,7 +145,9 @@ if __name__ == "__main__":
         if q["lure"]:
             assert q["lure"] in TOOLS_BY_NAME, f"{q['id']}: lure inexistente: {q['lure']}"
             assert q["lure"] not in q["expected"], f"{q['id']}: lure não pode estar no gabarito"
-        assert bool(q["expected"]) == (q["type"] != "no_tool"), f"{q['id']}: gabarito incoerente com o tipo"
+        assert bool(q["expected"]) == (q["type"] not in ABSTENTION_TYPES), f"{q['id']}: gabarito incoerente com o tipo"
+        if q["type"] == "near_miss":
+            assert q["lure"], f"{q['id']}: near_miss precisa de lure"
 
     pendentes = sum(1 for q in QUERIES if not q["reviewed_by"])
     print(f"queries.py: ok — {len(QUERIES)} queries, {dict(counts)}")

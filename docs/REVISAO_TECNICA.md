@@ -52,7 +52,7 @@ números aleatórios. A conferência usa as tabelas documentadas em `docs/data/`
 As versões em [requirements.txt](../requirements.txt) correspondem ao ambiente
 local inspecionado nesta revisão. Não certificam retroativamente o ambiente dos
 servidores ou da coleta de agosto. O Docker usa Python 3.14.0 e essas versões.
-[requirements-figures.txt](../requirements-figures.txt) acrescenta o Matplotlib.
+O Matplotlib, usado só na geração das figuras, faz parte do mesmo arquivo.
 A imagem-base usa uma versão explícita, mas não um digest imutável de sistema.
 
 Cada CSV novo recebe `<arquivo>.csv.meta.json` com versão do protocolo, backend,
