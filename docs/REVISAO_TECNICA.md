@@ -64,15 +64,15 @@ exigem um novo arquivo; a retomada não mistura implementações.
 As revisões dos pesos e o hardware remoto são registrados como desconhecidos.
 Para cada coleta real, mantenha um registro complementar, com evidências do servidor:
 
-| Informação | Como completar |
-|---|---|
-| CSV e seu manifesto | Caminho e hash do arquivo após encerrar a coleta |
-| Backend real | Comando executado e log da execução |
-| Pesos dos modelos e embeddings | Revisão/commit/hash efetivo dos artefatos no servidor |
-| Servidor de inferência | Nome, versão e argumentos de inicialização |
-| Hardware | GPUs, memória e demais recursos efetivamente usados |
-| Configuração experimental | Temperatura, limites de tokens, datas e condições de carga |
-| Revisão dos gabaritos | Identificação do segundo avaliador e data da conferência |
+| Informação | Como completar | Protocolo 3 |
+|---|---|---|
+| CSV e seu manifesto | Caminho e hash do arquivo após encerrar a coleta | Pendente |
+| Backend real | Comando executado e log da execução | Pendente |
+| Pesos dos modelos e embeddings | Revisão/commit/hash efetivo dos artefatos no servidor | `id` e `root` de `/v1/models` em `results/server_info_v3.json` (27/09/2026); hash pendente |
+| Servidor de inferência | Nome, versão e argumentos de inicialização | vLLM 0.26.0 (DeepSeek) e 0.21.0 (Gemma e embedding), via `/version` em 27/09/2026; argumentos de inicialização pendentes |
+| Hardware | GPUs, memória e demais recursos efetivamente usados | Pendente |
+| Configuração experimental | Temperatura, limites de tokens, datas e condições de carga | Temperatura 0,0 e `max_tokens` 512 (32 na 1ª etapa do `two_stage`), conforme `src/client.py` e `src/retrieval.py`; datas e carga pendentes |
+| Revisão dos gabaritos | Identificação do segundo avaliador e data da conferência | Pendente |
 
 Não preencha os campos desconhecidos por inferência a partir do nome do endpoint.
 Use um registro complementar, preservando o manifesto automático.

@@ -1,0 +1,35 @@
+{
+  "collected_at_utc": "2026-09-27T18:10:17Z",
+  "endpoints": {
+    "deepseek-v4-flash": {
+      "version": "0.26.0",
+      "models": [
+        {
+          "id": "DeepSeek-V4-Flash-0731",
+          "root": "/srv/models/DeepSeek-V4-Flash-0731",
+          "max_model_len": 262144
+        }
+      ]
+    },
+    "gemma-4-e4b": {
+      "version": "0.21.0",
+      "models": [
+        {
+          "id": "/srv/models/gemma-4-E4B-it",
+          "root": "/srv/models/gemma-4-E4B-it",
+          "max_model_len": 98304
+        }
+      ]
+    },
+    "embedding": {
+      "version": "0.21.0",
+      "models": [
+        {
+          "id": "/srv/models/qwen3-embedding-8B",
+          "root": "/srv/models/qwen3-embedding-8B",
+          "max_model_len": 32768
+        }
+      ]
+    }
+  }
+}
