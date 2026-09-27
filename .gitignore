@@ -8,6 +8,7 @@ __pycache__/
 results/embedding_cache_*.json
 results/smoke.csv
 results/pilot.csv
+results/pilot_v3*
 results/run_full.log
 
 # derivados de execuções alternativas (--input != raw_results.csv)
